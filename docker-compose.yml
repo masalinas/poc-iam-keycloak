@@ -1,0 +1,46 @@
+version: "3.9"
+
+volumes:
+  postgres_iam_data:
+    driver: local
+    
+services:
+  keycloakdb:
+    image: postgres
+    container_name: keycloakdb-poc
+    volumes:
+      - postgres_iam_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password
+    networks:
+      - network-name
+
+  keycloak:
+    build: .
+    container_name: keycloak-poc
+    volumes:
+      - ./config/realm:/opt/jboss/keycloak/imports
+      - ./config/themes/poc:/opt/jboss/keycloak/themes/poc      
+    environment:
+      KEYCLOAK_IMPORT: /opt/jboss/keycloak/imports/realm-export.json -Dkeycloak.profile.feature.upload_scripts=enabled
+      DB_VENDOR: POSTGRES
+      DB_SCHEMA: public
+      DB_ADDR: keycloakdb
+      DB_DATABASE: keycloak
+      DB_USER: admin
+      DB_PASSWORD: password
+      KEYCLOAK_USER: admin
+      KEYCLOAK_PASSWORD: password
+    ports:        
+      - 8080:8080      
+    depends_on:
+        - keycloakdb
+    networks:
+      - network-name
+  
+networks:
+  network-name:
+    name: poc
+      
